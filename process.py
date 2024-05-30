@@ -141,6 +141,20 @@ def generate_mask(input_image, net, palette, device = 'cpu'):
     cloth_seg.putpalette(palette)
     cloth_seg = cloth_seg.resize(img_size, Image.BICUBIC)
     cloth_seg.save(os.path.join(cloth_seg_out_dir, 'final_seg.png'))
+    
+    # Combine the mask with the original image
+    mask = cv2.resize(output_arr[0].astype(np.uint8), img_size, interpolation=cv2.INTER_NEAREST)
+    mask_colored = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
+
+    for cls in classes_to_save:
+        mask_colored[mask == cls] = [255, 255, 255]  # Green color for the mask
+    
+    original_image = cv2.cvtColor(np.array(input_image), cv2.COLOR_RGB2BGR)
+    combined_image = cv2.addWeighted(original_image, 1.0, mask_colored, 0.5, 0)
+
+    combined_image = Image.fromarray(cv2.cvtColor(combined_image, cv2.COLOR_BGR2RGB))
+    combined_image.save(os.path.join(cloth_seg_out_dir, 'combined_image.png'))
+    
     return cloth_seg
 
 
