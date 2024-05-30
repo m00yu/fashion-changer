@@ -164,6 +164,28 @@ def load_seg_model(checkpoint_path, device='cpu'):
 
     return net
 
+def capture_image_from_webcam():
+    cap = cv2.VideoCapture(0)
+
+    if not cap.isOpened():
+        print("Cannot open camera")
+        exit()
+
+    while True:
+        # Capture frame-by-frame
+        ret, frame = cap.read()
+        if ret:
+            # Display the resulting frame
+            cv2.imshow('Press space to capture image', frame)
+            if cv2.waitKey(1) == ord(' '):  # Press space to capture image
+                break
+
+    # Release the camera and close windows
+    cap.release()
+    cv2.destroyAllWindows()
+
+    return frame
+
 
 def main(args):
 
@@ -173,25 +195,28 @@ def main(args):
     model = load_seg_model(args.checkpoint_path, device=device)
 
     palette = get_palette(4)
-
-    from PIL import Image, ExifTags
     
-    img = Image.open(args.image)
+    if args.image == "camera":
+        # webcam으로부터 이미지 받기
+        frame = capture_image_from_webcam()
+        img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    else:
+        # local image 사용하기
+        img = Image.open(args.image)
+        exif = img._getexif()
+        if exif:
+            for orientation in ExifTags.TAGS.keys():
+                if ExifTags.TAGS[orientation] == 'Orientation':
+                    break
+
+            if orientation in exif:
+                if exif[orientation] == 3:
+                    img = img.rotate(180, expand=True)
+                elif exif[orientation] == 6:
+                    img = img.rotate(270, expand=True)
+                elif exif[orientation] == 8:
+                    img = img.rotate(90, expand=True)
     
-    exif = img._getexif()
-    if exif:
-        for orientation in ExifTags.TAGS.keys():
-            if ExifTags.TAGS[orientation] == 'Orientation':
-                break
-
-        if orientation in exif:
-            if exif[orientation] == 3:
-                img = img.rotate(180, expand=True)
-            elif exif[orientation] == 6:
-                img = img.rotate(270, expand=True)
-            elif exif[orientation] == 8:
-                img = img.rotate(90, expand=True)
-
     img = img.convert('RGB')
 
     cloth_seg = generate_mask(img, net=model, palette=palette, device=device)
