@@ -1,15 +1,17 @@
 <html>
 <head>
     <title>Image Segmentation Result</title>
-</head>
-<body>
-    <h1>Segmentation Result</h1>
     <style>
         img {
             width: 400px; /* Set the width to 300px */
             height: auto; /* Let the height adjust proportionally */
         }
     </style>
+</head>
+<body>
+    <h1>Segmentation Result</h1>
     <img src="data:image/png;base64,{{ myImage }}" alt="Segmented Image">
+    <br>
+    <button onclick="window.location.href='/';">Retry</button>
 </body>
 </html>
