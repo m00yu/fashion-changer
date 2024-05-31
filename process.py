@@ -14,6 +14,8 @@ import torchvision.transforms as transforms
 from collections import OrderedDict
 from options import opt
 
+from io import BytesIO
+
 
 def load_checkpoint(model, checkpoint_path):
     if not os.path.exists(checkpoint_path):
@@ -147,15 +149,20 @@ def generate_mask(input_image, net, palette, device = 'cpu'):
     mask_colored = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
 
     for cls in classes_to_save:
-        mask_colored[mask == cls] = [255, 255, 255]  # Green color for the mask
+        mask_colored[mask == cls] = [255, 0, 0]  # Green color for the mask
     
     original_image = cv2.cvtColor(np.array(input_image), cv2.COLOR_RGB2BGR)
-    combined_image = cv2.addWeighted(original_image, 1.0, mask_colored, 0.5, 0)
+    combined_image = cv2.addWeighted(original_image, 1.0, mask_colored, 1.0, 0)
 
     combined_image = Image.fromarray(cv2.cvtColor(combined_image, cv2.COLOR_BGR2RGB))
     combined_image.save(os.path.join(cloth_seg_out_dir, 'combined_image.png'))
     
-    return cloth_seg
+    # Save combined_image to a BytesIO object
+    img_byte_arr = BytesIO()
+    combined_image.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+    
+    return img_byte_arr.getvalue()
 
 
 
@@ -191,6 +198,7 @@ def capture_image_from_webcam():
         if ret:
             # Display the resulting frame
             cv2.imshow('Press space to capture image', frame)
+            print("showing")
             if cv2.waitKey(1) == ord(' '):  # Press space to capture image
                 break
 
