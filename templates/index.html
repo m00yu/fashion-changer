@@ -1,12 +1,47 @@
 <html>
 <head>
     <title>Upload Image</title>
+    <style>
+        video {
+            width: 320px;
+            height: 240px;
+            border: 1px solid black;
+        }
+    </style>
 </head>
 <body>
     <h1>Upload an Image for Segmentation</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <input type="submit" value="Upload">
+    <video id="video" autoplay></video>
+    <button id="capture">Capture</button>
+    <form id="upload-form" action="/upload" method="post">
+        <input type="hidden" id="image-data" name="image_data">
     </form>
+    <script>
+        const video = document.getElementById('video');
+        const captureButton = document.getElementById('capture');
+        const uploadForm = document.getElementById('upload-form');
+        const imageDataInput = document.getElementById('image-data');
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error('Error accessing webcam: ', err);
+            });
+
+        captureButton.addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageDataUrl = canvas.toDataURL('image/png');
+            imageDataInput.value = imageDataUrl;
+            
+            // Submit the form programmatically
+            uploadForm.submit();
+        });
+    </script>
 </body>
 </html>

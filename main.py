@@ -1,4 +1,4 @@
-from fastapi import File, UploadFile, Request, FastAPI
+from fastapi import File, UploadFile, Request, FastAPI, Form
 from fastapi.templating import Jinja2Templates
 import base64
 from test import *
@@ -17,44 +17,16 @@ palette = get_palette(4)
 @app.get("/")
 def main(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
-  
+
 @app.post("/upload")
-def upload(request: Request, file: UploadFile = File(...)):
-    try:
-        contents = file.file.read()
-        with open("uploaded_" + file.filename, "wb") as f:
-            f.write(contents)
-    except Exception:
-        return {"message": "There was an error uploading the file"}
-    finally:
-        file.file.close()
-
-    base64_encoded_image = base64.b64encode(contents).decode("utf-8")
+async def upload(request: Request, image_data: str = Form(...)):
+    image_data = image_data.split(",")[1]  # Remove the 'data:image/png;base64,' part
+    contents = base64.b64decode(image_data)
+    
     img = Image.open(BytesIO(contents))
-    exif = img._getexif()
-    if exif:
-        for orientation in ExifTags.TAGS.keys():
-            if ExifTags.TAGS[orientation] == 'Orientation':
-                break
-
-        if orientation in exif:
-            if exif[orientation] == 3:
-                img = img.rotate(180, expand=True)
-            elif exif[orientation] == 6:
-                img = img.rotate(270, expand=True)
-            elif exif[orientation] == 8:
-                img = img.rotate(90, expand=True)
     img = img.convert('RGB')
-    combined_image_data  = generate_mask(img, net=net, palette=palette, device=device)
+    
+    combined_image_data = generate_mask(img, net=net, palette=palette, device=device)
     base64_encoded_image = base64.b64encode(combined_image_data).decode("utf-8")
-       
-    # _input = torch.stack([transform(img)])
-    # output = net(_input).argmax().tolist()
 
-    # if output == 0:
-    #     result = "Cat"
-    # else:
-    #     result = "Dog"
-
-    # return templates.TemplateResponse("display.html", {"request": request, "result":result, "myImage":base64_encoded_image})
     return templates.TemplateResponse("display.html", {"request": request, "myImage": base64_encoded_image})
