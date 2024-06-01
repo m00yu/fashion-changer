@@ -1,4 +1,4 @@
-from network import U2NET
+from network import U2NET, modelv2
 
 import os
 from PIL import Image, ExifTags
@@ -8,8 +8,10 @@ import argparse
 import numpy as np
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as TF
 
 from collections import OrderedDict
 from options import opt
@@ -178,7 +180,6 @@ def check_or_download_model(file_path):
 
 def load_seg_model(checkpoint_path, device='cpu'):
     net = U2NET(in_ch=3, out_ch=4)
-    check_or_download_model(checkpoint_path)
     net = load_checkpoint(net, checkpoint_path)
     net = net.to(device)
     net = net.eval()
@@ -208,20 +209,95 @@ def capture_image_from_webcam():
 
     return frame
 
+def build_model(model_path, device)-> nn.Module:
+    net = modelv2(pretrained=False).to(device)
+
+    if model_path:
+        print(f'[*] Load Model from {model_path}')
+        net.load_state_dict(torch.load(model_path, map_location=device))
+
+    return net
+
+def get_mask(image, net, size=224):
+    image_h, image_w = image.shape[0], image.shape[1]
+
+    down_size_image = cv2.resize(image, (size, size))
+    down_size_image = cv2.cvtColor(down_size_image, cv2.COLOR_BGR2RGB)
+    down_size_image = torch.from_numpy(down_size_image).float().div(255.0).unsqueeze(0)
+    down_size_image = np.transpose(down_size_image, (0, 3, 1, 2)).to(device)
+    down_size_image = TF.normalize(down_size_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    mask: torch.nn.Module = net(down_size_image)
+
+    # mask = torch.squeeze(mask[:, 1, :, :])
+    mask = mask.argmax(dim=1).squeeze()
+    mask_cv2 = mask.data.cpu().numpy() * 255
+    mask_cv2 = mask_cv2.astype(np.uint8)
+    mask_cv2 = cv2.resize(mask_cv2, (image_w, image_h))
+
+    return mask_cv2
+def get_mask(image, net, size=224):
+    image_h, image_w = image.shape[0], image.shape[1]
+
+    down_size_image = cv2.resize(image, (size, size))
+    down_size_image = cv2.cvtColor(down_size_image, cv2.COLOR_BGR2RGB)
+    down_size_image = torch.from_numpy(down_size_image).float().div(255.0).unsqueeze(0)
+    down_size_image = np.transpose(down_size_image, (0, 3, 1, 2))
+    down_size_image = TF.normalize(down_size_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    mask: torch.nn.Module = net(down_size_image)
+
+    # mask = torch.squeeze(mask[:, 1, :, :])
+    mask = mask.argmax(dim=1).squeeze()
+    mask_cv2 = mask.data.cpu().numpy() * 255
+    mask_cv2 = mask_cv2.astype(np.uint8)
+    mask_cv2 = cv2.resize(mask_cv2, (image_w, image_h))
+
+    return mask_cv2
+
+
+def alpha_image(image, mask, alpha=0.1):
+    color = np.zeros((mask.shape[0], mask.shape[1], 3))
+    color[np.where(mask != 0)] = [0, 130, 255]
+    alpha_hand = ((1 - alpha) * image + alpha * color).astype(np.uint8)
+    alpha_hand = cv2.bitwise_and(alpha_hand, alpha_hand, mask=mask)
+
+    return cv2.add(alpha_hand, image)
 
 def main(args):
 
     device = 'cuda:0' if args.cuda else 'cpu'
 
-    # Create an instance of your model
-    model = load_seg_model(args.checkpoint_path, device=device)
+    # # Create an instance of your model
+    # model = load_seg_model(args.checkpoint_path, device=device)
 
     palette = get_palette(4)
     
-    if args.image == "camera":
+    if args.model == "cloth_camera":
         # webcam으로부터 이미지 받기
         frame = capture_image_from_webcam()
         img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    elif args.model == "hair":
+        # real time hair segmentation
+        model = build_model(args.checkpoint_path, device)
+        cam = cv2.VideoCapture(0)
+
+        if not cam.isOpened():
+            raise Exception("webcam is not detected")
+
+        while True:
+            # ret : frame capture결과(boolean)
+            # frame : Capture한 frame
+
+            ret, image = cam.read()
+
+            if ret:
+                mask = get_mask(image, model)
+                add = alpha_image(image, mask)
+                cv2.imshow('frame', add)
+                if cv2.waitKey(1) & 0xFF == ord(chr(27)):
+                    break
+
+        cam.release()
+        cv2.destroyAllWindows()
     else:
         # local image 사용하기
         img = Image.open(args.image)
@@ -247,7 +323,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Help to set arguments for Cloth Segmentation.')
-    parser.add_argument('--image', type=str, help='Path to the input image')
+    parser.add_argument('--model', type=str, help='Path to the input image')
     parser.add_argument('--cuda', action='store_true', help='Enable CUDA (default: False)')
     parser.add_argument('--checkpoint_path', type=str, default='model/cloth_segm.pth', help='Path to the checkpoint file')
     args = parser.parse_args()

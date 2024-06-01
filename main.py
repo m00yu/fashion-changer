@@ -5,10 +5,9 @@ from test import *
 from io import BytesIO
 from process import *
 
-PATH = "./model/cloth_segm.pth"
+PATH = "./model/hairmattenet_v2.pth"
 device = 'cpu'
 net = load_seg_model(PATH, device=device)
-net.eval() # 필요한가?
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
