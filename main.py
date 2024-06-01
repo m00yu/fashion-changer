@@ -1,17 +1,23 @@
 from fastapi import File, UploadFile, Request, FastAPI, Form
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 import base64
 from test import *
 from io import BytesIO
 from process import *
 
-PATH = "./model/hairmattenet_v2.pth"
+CLOTH_PATH = "./model/cloth_segm.pth"
+HAIR_PATH = "./model/hairmattenet_v2.pth"
 device = 'cpu'
-net = load_seg_model(PATH, device=device)
+
+cloth_net = load_seg_model(CLOTH_PATH, device=device)
+hair_net = build_model(HAIR_PATH, device)
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 palette = get_palette(4)
+
 
 @app.get("/")
 def main(request: Request):
@@ -24,8 +30,17 @@ async def upload(request: Request, image_data: str = Form(...)):
     
     img = Image.open(BytesIO(contents))
     img = img.convert('RGB')
-    
-    combined_image_data = generate_mask(img, net=net, palette=palette, device=device)
-    base64_encoded_image = base64.b64encode(combined_image_data).decode("utf-8")
+    img = np.array(img)
 
-    return templates.TemplateResponse("display.html", {"request": request, "myImage": base64_encoded_image})
+    mask = get_mask(img, hair_net)
+    combined_image = alpha_image(img, mask)
+    
+    combined_image = Image.fromarray(combined_image)
+    img_byte_arr = BytesIO()
+    combined_image.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+
+    base64_encoded_image = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
+
+    # return templates.TemplateResponse("display.html", {"request": request, "myImage": base64_encoded_image})
+    return JSONResponse(content={"segmented_image": base64_encoded_image})

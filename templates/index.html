@@ -1,27 +1,24 @@
 <html>
 <head>
-    <title>Upload Image</title>
+    <title>Real-time Hair Segmentation</title>
     <style>
-        video {
-            width: 320px;
-            height: 240px;
+        video, canvas {
+            width: 640px;
+            height: 480px;
             border: 1px solid black;
         }
     </style>
 </head>
 <body>
-    <h1>Upload an Image for Segmentation</h1>
-    <video id="video" autoplay></video>
-    <button id="capture">Capture</button>
-    <form id="upload-form" action="/upload" method="post">
-        <input type="hidden" id="image-data" name="image_data">
-    </form>
+    <h1>Real-time Hair Segmentation</h1>
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
     <script>
         const video = document.getElementById('video');
-        const captureButton = document.getElementById('capture');
-        const uploadForm = document.getElementById('upload-form');
-        const imageDataInput = document.getElementById('image-data');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
 
+        // Initialize the webcam video
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
                 video.srcObject = stream;
@@ -30,17 +27,32 @@
                 console.error('Error accessing webcam: ', err);
             });
 
-        captureButton.addEventListener('click', () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const context = canvas.getContext('2d');
+        async function sendFrame() {
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const imageDataUrl = canvas.toDataURL('image/png');
-            imageDataInput.value = imageDataUrl;
-            
-            // Submit the form programmatically
-            uploadForm.submit();
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'image_data=' + encodeURIComponent(imageDataUrl)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const segmentedImg = new Image();
+                segmentedImg.onload = function () {
+                    context.drawImage(segmentedImg, 0, 0, canvas.width, canvas.height);
+                };
+                segmentedImg.src = 'data:image/png;base64,' + result.segmented_image;
+            } else {
+                console.error('Error processing the frame');
+            }
+
+            requestAnimationFrame(sendFrame);
+        }
+
+        video.addEventListener('play', () => {
+            sendFrame();
         });
     </script>
 </body>

@@ -1,15 +1,15 @@
 <html>
 <head>
-    <title>Image Segmentation Result</title>
+    <title>Segmented Image</title>
     <style>
         img {
-            width: 400px; /* Set the width to 300px */
-            height: auto; /* Let the height adjust proportionally */
+            width: 640px; /* Set the width */
+            height: auto; /* Maintain the aspect ratio */
         }
     </style>
 </head>
 <body>
-    <h1>Segmentation Result</h1>
+    <h1>Segmented Image</h1>
     <img src="data:image/png;base64,{{ myImage }}" alt="Segmented Image">
     <br>
     <button onclick="window.location.href='/';">Retry</button>
