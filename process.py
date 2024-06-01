@@ -266,15 +266,16 @@ def main(args):
 
     device = 'cuda:0' if args.cuda else 'cpu'
 
-    # # Create an instance of your model
-    # model = load_seg_model(args.checkpoint_path, device=device)
-
     palette = get_palette(4)
     
     if args.model == "cloth_camera":
+        model = load_seg_model(args.checkpoint_path, device=device)
         # webcam으로부터 이미지 받기
         frame = capture_image_from_webcam()
         img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        img = img.convert('RGB')
+        cloth_seg = generate_mask(img, net=model, palette=palette, device=device)
+
     elif args.model == "hair":
         # real time hair segmentation
         model = build_model(args.checkpoint_path, device)
@@ -299,6 +300,7 @@ def main(args):
         cam.release()
         cv2.destroyAllWindows()
     else:
+        model = load_seg_model(args.checkpoint_path, device=device)
         # local image 사용하기
         img = Image.open(args.image)
         exif = img._getexif()
@@ -315,9 +317,8 @@ def main(args):
                 elif exif[orientation] == 8:
                     img = img.rotate(90, expand=True)
     
-    img = img.convert('RGB')
-
-    cloth_seg = generate_mask(img, net=model, palette=palette, device=device)
+        img = img.convert('RGB')
+        cloth_seg = generate_mask(img, net=model, palette=palette, device=device)
 
 
 
