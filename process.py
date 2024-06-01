@@ -254,10 +254,11 @@ def get_mask(image, net, size=224):
     return mask_cv2
 
 
-def alpha_image(image, mask, alpha=0.1):
-    color = np.zeros((mask.shape[0], mask.shape[1], 3))
-    color[np.where(mask != 0)] = [0, 130, 255]
-    alpha_hand = ((1 - alpha) * image + alpha * color).astype(np.uint8)
+def alpha_image(image, mask, color=(0, 130, 255), alpha=0.5):
+    color = np.array(color).reshape(1, 1, 3)
+    color_mask = np.zeros((mask.shape[0], mask.shape[1], 3))
+    color_mask[np.where(mask != 0)] = color
+    alpha_hand = ((1 - alpha) * image + alpha * color_mask).astype(np.uint8)
     alpha_hand = cv2.bitwise_and(alpha_hand, alpha_hand, mask=mask)
 
     return cv2.add(alpha_hand, image)

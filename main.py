@@ -18,22 +18,26 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 palette = get_palette(4)
 
+def hex_to_rgb(hex_color):
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
 @app.get("/")
 def main(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/upload")
-async def upload(request: Request, image_data: str = Form(...)):
+async def upload(image_data: str = Form(...), mask_color: str = Form(...)):
     image_data = image_data.split(",")[1]  # Remove the 'data:image/png;base64,' part
     contents = base64.b64decode(image_data)
+    mask_color_rgb = hex_to_rgb(mask_color)
     
     img = Image.open(BytesIO(contents))
     img = img.convert('RGB')
     img = np.array(img)
 
     mask = get_mask(img, hair_net)
-    combined_image = alpha_image(img, mask)
+    combined_image = alpha_image(img, mask, color=mask_color_rgb)
     
     combined_image = Image.fromarray(combined_image)
     img_byte_arr = BytesIO()
@@ -42,5 +46,4 @@ async def upload(request: Request, image_data: str = Form(...)):
 
     base64_encoded_image = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
 
-    # return templates.TemplateResponse("display.html", {"request": request, "myImage": base64_encoded_image})
     return JSONResponse(content={"segmented_image": base64_encoded_image})
