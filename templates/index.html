@@ -1,24 +1,67 @@
 <html>
 <head>
-    <title>Real-time Hair Segmentation</title>
+    <title>Real-time Segmentation</title>
     <style>
         video, canvas {
             width: 640px;
             height: 480px;
             border: 1px solid black;
         }
+        #loading {
+            display: none;
+            font-size: 35px;
+            color: red;
+            position: absolute;
+            top: 120px;  
+            left: 20px; 
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+        }
+        label, select {
+            font-size: 20px; /* Increase text size for segmentation type */
+            display: block;
+            margin-top: 20px; /* Adjust this value to change vertical position */
+        }
+        #captureButton {
+            font-size: 20px; /* Increase font size for button text */
+            padding: 5px 10px; /* Increase button size */
+        }
+        .color-picker-info {
+            font-size: 20px; /* Set text size for the descriptive information */
+            margin-left: 10px; /* Add some space between the color picker and the text */
+        }
     </style>
 </head>
 <body>
-    <h1>Real-time Hair Segmentation</h1>
-    <video id="video" autoplay playsinline muted></video>
+    <h1>Change Your Fashion</h1>
     <canvas id="canvas"></canvas>
-    <input type="color" id="maskColor" value="#0082FF" title="Choose mask color">
+    <video id="video" autoplay playsinline muted></video>
+    <button id="captureButton" style="display:none;">Capture Image</button>
+    <label for="segmentationType">Segmentation Type:</label>
+    <select id="segmentationType">
+        <option value="hair">Hair Segmentation</option>
+        <option value="cloth">Cloth Segmentation</option>
+    </select>
+    <div style="margin-top: 20px;">
+        <input type="color" id="maskColor" value="#0082FF" title="Choose mask color">
+        <span class="color-picker-info">Choose mask color</span>
+    </div>
+    <div id="loading">Loading...</div>
     <script>
-        const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
+        const video = document.getElementById('video');
         const context = canvas.getContext('2d');
+        const captureButton = document.getElementById('captureButton');
+        const segmentationTypeSelect = document.getElementById('segmentationType');
         const maskColorInput = document.getElementById('maskColor');
+        const loading = document.getElementById('loading');
 
         // Initialize the webcam video
         navigator.mediaDevices.getUserMedia({ video: true })
@@ -29,15 +72,59 @@
                 console.error('Error accessing webcam: ', err);
             });
 
+        segmentationTypeSelect.addEventListener('change', () => {
+            if (segmentationTypeSelect.value === 'hair') {
+                captureButton.style.display = 'none';
+                loading.style.display = 'none';
+                sendFrame();  // Start real-time hair segmentation
+            } else {
+                captureButton.style.display = 'block';
+                cancelAnimationFrame(animationFrameId);  // Stop real-time hair segmentation
+            }
+        });
+
+        let animationFrameId;
+
         async function sendFrame() {
+            if (segmentationTypeSelect.value === 'hair') {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageDataUrl = canvas.toDataURL('image/png');
+                const maskColor = maskColorInput.value;
+                const segmentationType = segmentationTypeSelect.value;
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'image_data=' + encodeURIComponent(imageDataUrl) + '&mask_color=' + encodeURIComponent(maskColor) + '&segmentation_type=' + encodeURIComponent(segmentationType)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const segmentedImg = new Image();
+                    segmentedImg.onload = function () {
+                        context.drawImage(segmentedImg, 0, 0, canvas.width, canvas.height);
+                    };
+                    segmentedImg.src = 'data:image/png;base64,' + result.segmented_image;
+                } else {
+                    console.error('Error processing the frame');
+                }
+
+                animationFrameId = requestAnimationFrame(sendFrame);
+            }
+        }
+
+        captureButton.addEventListener('click', async () => {
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const imageDataUrl = canvas.toDataURL('image/png');
             const maskColor = maskColorInput.value;
+            const segmentationType = segmentationTypeSelect.value;
+
+            loading.style.display = 'block';
 
             const response = await fetch('/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'image_data=' + encodeURIComponent(imageDataUrl) + '&mask_color=' + encodeURIComponent(maskColor)
+                body: 'image_data=' + encodeURIComponent(imageDataUrl) + '&mask_color=' + encodeURIComponent(maskColor) + '&segmentation_type=' + encodeURIComponent(segmentationType)
             });
 
             if (response.ok) {
@@ -45,18 +132,16 @@
                 const segmentedImg = new Image();
                 segmentedImg.onload = function () {
                     context.drawImage(segmentedImg, 0, 0, canvas.width, canvas.height);
+                    loading.style.display = 'none';
                 };
                 segmentedImg.src = 'data:image/png;base64,' + result.segmented_image;
             } else {
                 console.error('Error processing the frame');
+                loading.style.display = 'none';
             }
-
-            requestAnimationFrame(sendFrame);
-        }
-
-        video.addEventListener('play', () => {
-            sendFrame();
         });
+
+        segmentationTypeSelect.dispatchEvent(new Event('change'));  // Trigger initial setup
     </script>
 </body>
 </html>

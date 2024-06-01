@@ -27,7 +27,7 @@ def main(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/upload")
-async def upload(image_data: str = Form(...), mask_color: str = Form(...)):
+async def upload(image_data: str = Form(...), mask_color: str = Form(...), segmentation_type: str = Form(...)):
     image_data = image_data.split(",")[1]  # Remove the 'data:image/png;base64,' part
     contents = base64.b64decode(image_data)
     mask_color_rgb = hex_to_rgb(mask_color)
@@ -36,14 +36,16 @@ async def upload(image_data: str = Form(...), mask_color: str = Form(...)):
     img = img.convert('RGB')
     img = np.array(img)
 
-    mask = get_mask(img, hair_net)
-    combined_image = alpha_image(img, mask, color=mask_color_rgb)
+    if segmentation_type == 'hair':
+        mask = get_mask(img, hair_net)
+        combined_image = alpha_image(img, mask, color=mask_color_rgb)
+        combined_image = Image.fromarray(combined_image)
+        img_byte_arr = BytesIO()
+        combined_image.save(img_byte_arr, format='PNG')
+        img_byte_arr.seek(0)
+    elif segmentation_type == 'cloth':
+        img_byte_arr = generate_mask(Image.fromarray(img), cloth_net, palette, color=mask_color_rgb, device=device)
     
-    combined_image = Image.fromarray(combined_image)
-    img_byte_arr = BytesIO()
-    combined_image.save(img_byte_arr, format='PNG')
-    img_byte_arr.seek(0)
-
     base64_encoded_image = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
 
     return JSONResponse(content={"segmented_image": base64_encoded_image})
