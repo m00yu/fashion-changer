@@ -24,11 +24,13 @@
     bash server.sh
   ```
   This will automatically pull docker image from docker hub and run the docker container in the background.
-  <br/>Once the server is running, open your web browser and navigate to http://127.0.0.1 to access the application.
-- To stop container,
+  <br/> Once the server is running, open your web browser and navigate to http://127.0.0.1 to access the application.
+  <br/> Page loading may take few seconds.
+- To stop container, run the below command.
   ```bash
     docker stop server
   ```
+  Conflict may happen if you do not stop the 'server' container, and trying to run `bash server.sh` again.
 ## Pretrained Models
 Please download model checkpoints from the below link.
 <br/> https://drive.google.com/drive/folders/1qwBuv3tRUuUhi5HLUqmPsqrSLdcBw85s?usp=sharing
