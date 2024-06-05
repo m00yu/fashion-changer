@@ -1,15 +1,20 @@
 # Webcam Fashion Changer
 
 ## Overview
-- This project is a webcam fashion-changer application that can segment the head or clothes from a live webcam feed and apply user-defined color to the segmented area.
-- It started as a personal project for the Open Source Software Practice course.
+- This project is a webcam fashion-changer application that can segment the hair or clothes from a live webcam feed and apply user-defined color to the segmented area.
+- Finding one's personal color is very costful. Nearly 100,000 KRW per session.
+- To help you **discover the colors that suit you best quickly and easily**, this application allows you to **change your hair color and clothing color**.
+- Find your perfect match!
+  
 ### Features
 - Real-time **Hair** segmentation: Segments hair from a live webcam feed.
-- **Cloth** segmentation: Segments cloth from a live webcam feed.
-- Color Application: Applies color to the segmented area.
-- User Choice: Users can choose between head segmentation and clothes segmentation.
+- **Cloth** segmentation: Segments cloth from a webcam-captured image.
+- Interactive Color Change: Experiment with **different hair and clothing colors in real-time**.
+- Two models available: Users can choose between head segmentation and clothes segmentation.
+  
 ### Model 1) Hair-chainger (Real-Time)
 ![시연영상](https://github.com/m00yu/fashion-changer/blob/main/assets/hair.gif)
+
 ### Model 2) Cloth-changer
 ![시연영상](https://github.com/m00yu/fashion-changer/blob/main/assets/cloth.gif)
 
@@ -30,11 +35,16 @@
   ```bash
     docker stop server
   ```
-  Conflict may happen if you do not stop the 'server' container, and trying to run `bash server.sh` again.
+- To remove container, run the below command.
+  ```bash
+    docker container rm server
+  ```
+  Conflict may happen if you do not remove the 'server' container, and trying to run `bash server.sh` again.
+  
 ## Pretrained Models
 Please download model checkpoints from the below link.
 <br/> https://drive.google.com/drive/folders/1qwBuv3tRUuUhi5HLUqmPsqrSLdcBw85s?usp=sharing
-<br/> Then place these files to **fashion-changer/models/** directory.
+<br/> Create **fashion-changer/models/** directory, then place model weights to the **fashion-changer/models/** directory 
 
 
 ---
@@ -49,7 +59,4 @@ Please download model checkpoints from the below link.
 - Report Bugs: Use the issue tracker to report bugs.
 - Suggest Features: Use the issue tracker to suggest features.
 - Submit Pull Requests: Fork the repository, create a branch, make your changes, and submit a pull request.
-
-
-
 ---
