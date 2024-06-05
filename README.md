@@ -9,9 +9,9 @@
 - Color Application: Applies color to the segmented area.
 - User Choice: Users can choose between head segmentation and clothes segmentation.
 ### Model 1) Hair-chainger (Real-Time)
-![시연영상](https://github.com/m00yu/fashion-changer/blob/main/assets/hair-changer.gif)
+![시연영상](https://github.com/m00yu/fashion-changer/blob/main/assets/hair.gif)
 ### Model 2) Cloth-changer
-![시연영상](https://github.com/m00yu/fashion-changer/blob/main/assets/cloth-changer.gif)
+![시연영상](https://github.com/m00yu/fashion-changer/blob/main/assets/cloth.gif)
 
 ## How to use
 - Clone this repository
@@ -19,15 +19,11 @@
     git clone https://github.com/m00yu/fashion-changer.git
     cd fashion-changer
   ```   
-- Setup environment using Docker
-  ```bash
-    docker build -t <docker_name> .
-  ```
-- Run server by below command
+- Then simply run the below command.
   ```bash
     bash server.sh
   ```
-  This will start the container in the background.
+  This will automatically pull docker image from docker hub and run the docker container in the background.
   <br/>Once the server is running, open your web browser and navigate to http://127.0.0.1 to access the application.
 - To stop container,
   ```bash
