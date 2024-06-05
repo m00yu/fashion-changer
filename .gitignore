@@ -216,6 +216,3 @@ output/cloth_seg/*.png
 input/*.png
 input/*.jpg
 assets/*.png
-
-## ignore model file
-model/*.pth
