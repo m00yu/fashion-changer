@@ -24,6 +24,13 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Subtle shadow for depth */
         }
 
+        .video-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
         video, canvas {
             width: 640px;
             height: 480px;
@@ -79,12 +86,24 @@
             padding: 10px;
             border-radius: 5px;
         }
+
+        #uploadInput {
+            display: block;
+            margin: 10px auto;
+        }
     </style>
 </head>
 <body>
     <div class="main-container">
         <h1>Change Your Fashion</h1>
         <div class="controls">
+            <div class="control-group">
+                <label for="imageType">Choose Image Type: </label>
+                <select id="imageType">
+                    <option value="webcam">Real Time Through WebCam</option>
+                    <option value="upload">Upload your Picture</option>
+                </select>
+            </div>
             <div class="control-group">
                 <label for="segmentationType">Segmentation Type: </label>
                 <select id="segmentationType">
@@ -98,9 +117,12 @@
                 
             </div>
             <button id="captureButton" style="display:none;">Capture Image</button>
+            <input type="file" id="uploadInput" accept="image/*" style="display:none;">
         </div>
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="canvas"></canvas>
+        <div class="video-container">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="canvas"></canvas>
+        </div>
         <div id="loading">Loading...</div>
     </div>
     <script>
@@ -111,31 +133,55 @@
         const segmentationTypeSelect = document.getElementById('segmentationType');
         const maskColorInput = document.getElementById('maskColor');
         const loading = document.getElementById('loading');
+        const imageTypeSelect = document.getElementById('imageType');
+        const uploadInput = document.getElementById('uploadInput');
 
         // Initialize the webcam video
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                video.srcObject = stream;
-            })
-            .catch(err => {
-                console.error('Error accessing webcam: ', err);
+        function startWebcam() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                })
+                .catch(err => {
+                    console.error('Error accessing webcam: ', err);
+                });
+        }
+
+        function stopWebcam() {
+            let stream = video.srcObject;
+            let tracks = stream.getTracks();
+
+            tracks.forEach(function(track) {
+                track.stop();
             });
 
-        segmentationTypeSelect.addEventListener('change', () => {
-            if (segmentationTypeSelect.value === 'hair') {
+            video.srcObject = null;
+        }
+
+        function updateUI() {
+            if (imageTypeSelect.value === 'upload') {
                 captureButton.style.display = 'none';
-                loading.style.display = 'none';
-                sendFrame();  // Start real-time hair segmentation
+                uploadInput.style.display = 'block';
+                video.style.display = 'none';
+                stopWebcam();
+            } else if (imageTypeSelect.value === 'webcam' && segmentationTypeSelect.value === 'hair') {
+                captureButton.style.display = 'none';
+                uploadInput.style.display = 'none';
+                video.style.display = 'block';
+                startWebcam();
+                sendFrame();
             } else {
                 captureButton.style.display = 'block';
-                cancelAnimationFrame(animationFrameId);  // Stop real-time hair segmentation
+                uploadInput.style.display = 'none';
+                video.style.display = 'block';
+                startWebcam();
             }
-        });
+        }
 
         let animationFrameId;
 
         async function sendFrame() {
-            if (segmentationTypeSelect.value === 'hair') {
+            if (segmentationTypeSelect.value === 'hair' && imageTypeSelect.value === 'webcam') {
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const imageDataUrl = canvas.toDataURL('image/png');
                 const maskColor = maskColorInput.value;
@@ -190,7 +236,53 @@
             }
         });
 
-        segmentationTypeSelect.dispatchEvent(new Event('change'));  // Trigger initial setup
+        imageTypeSelect.addEventListener('change', updateUI);
+        segmentationTypeSelect.addEventListener('change', updateUI);
+
+        uploadInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async function (e) {
+                    const image = new Image();
+                    image.onload = async function () {
+                        canvas.width = image.width;
+                        canvas.height = image.height;
+                        context.drawImage(image, 0, 0);
+
+                        const imageDataUrl = canvas.toDataURL('image/png');
+                        const maskColor = maskColorInput.value;
+                        const segmentationType = segmentationTypeSelect.value;
+
+                        loading.style.display = 'block';
+
+                        const response = await fetch('/upload', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: 'image_data=' + encodeURIComponent(imageDataUrl) + '&mask_color=' + encodeURIComponent(maskColor) + '&segmentation_type=' + encodeURIComponent(segmentationType)
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            const segmentedImg = new Image();
+                            segmentedImg.onload = function () {
+                                context.drawImage(segmentedImg, 0, 0, canvas.width, canvas.height);
+                                loading.style.display = 'none';
+                            };
+                            segmentedImg.src = 'data:image/png;base64,' + result.segmented_image;
+                        } else {
+                            console.error('Error processing the frame');
+                            loading.style.display = 'none';
+                        }
+                    };
+                    image.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Initial setup
+        updateUI();
     </script>
 </body>
 </html>
