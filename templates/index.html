@@ -97,6 +97,11 @@
     <div class="main-container">
         <h1>Change Your Fashion</h1>
         <div class="controls">
+            <!--
+            ######################################################
+            ########################PHASE2########################
+            ######################################################
+            -->
             <div class="control-group">
                 <label for="imageType">Choose Image Type: </label>
                 <select id="imageType">
@@ -104,6 +109,11 @@
                     <option value="upload">Upload your Picture</option>
                 </select>
             </div>
+            <!--
+            ######################################################
+            ########################PHASE2########################
+            ######################################################
+            -->
             <div class="control-group">
                 <label for="segmentationType">Segmentation Type: </label>
                 <select id="segmentationType">
@@ -136,6 +146,9 @@
         const imageTypeSelect = document.getElementById('imageType');
         const uploadInput = document.getElementById('uploadInput');
 
+        // ######################################################
+        // ########################PHASE2########################
+        // ######################################################
         // Initialize the webcam video
         function startWebcam() {
             navigator.mediaDevices.getUserMedia({ video: true })
@@ -177,6 +190,9 @@
                 startWebcam();
             }
         }
+        // ######################################################
+        // ########################PHASE2########################
+        // ######################################################
 
         let animationFrameId;
 
@@ -239,6 +255,9 @@
         imageTypeSelect.addEventListener('change', updateUI);
         segmentationTypeSelect.addEventListener('change', updateUI);
 
+        // ######################################################
+        // ########################PHASE2########################
+        // ######################################################
         uploadInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -281,6 +300,9 @@
             }
         });
 
+        // ######################################################
+        // ########################PHASE2########################
+        // ######################################################
         // Initial setup
         updateUI();
     </script>
