@@ -91,6 +91,11 @@
             display: block;
             margin: 10px auto;
         }
+
+        #downloadButton {
+            display: none;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -124,10 +129,10 @@
             <div class="control-group">
                 <span class="color-picker-info">Masking color: </span>
                 <input type="color" id="maskColor" value="#0082FF" title="Mask color: ">
-                
             </div>
             <button id="captureButton" style="display:none;">Capture Image</button>
             <input type="file" id="uploadInput" accept="image/*" style="display:none;">
+            <button id="downloadButton">Download Result</button>
         </div>
         <div class="video-container">
             <video id="video" autoplay playsinline muted></video>
@@ -145,11 +150,13 @@
         const loading = document.getElementById('loading');
         const imageTypeSelect = document.getElementById('imageType');
         const uploadInput = document.getElementById('uploadInput');
+        const downloadButton = document.getElementById('downloadButton');
 
         // ######################################################
         // ########################PHASE2########################
         // ######################################################
-        // Initialize the webcam video
+        let segmentedImgUrl = '';
+
         function startWebcam() {
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then(stream => {
@@ -176,17 +183,20 @@
                 captureButton.style.display = 'none';
                 uploadInput.style.display = 'block';
                 video.style.display = 'none';
+                downloadButton.style.display = 'none';
                 stopWebcam();
             } else if (imageTypeSelect.value === 'webcam' && segmentationTypeSelect.value === 'hair') {
                 captureButton.style.display = 'none';
                 uploadInput.style.display = 'none';
                 video.style.display = 'block';
+                downloadButton.style.display = 'none';
                 startWebcam();
                 sendFrame();
             } else {
                 captureButton.style.display = 'block';
                 uploadInput.style.display = 'none';
                 video.style.display = 'block';
+                downloadButton.style.display = 'none';
                 startWebcam();
             }
         }
@@ -216,6 +226,7 @@
                         context.drawImage(segmentedImg, 0, 0, canvas.width, canvas.height);
                     };
                     segmentedImg.src = 'data:image/png;base64,' + result.segmented_image;
+                    segmentedImgUrl = segmentedImg.src;
                 } else {
                     console.error('Error processing the frame');
                 }
@@ -244,8 +255,10 @@
                 segmentedImg.onload = function () {
                     context.drawImage(segmentedImg, 0, 0, canvas.width, canvas.height);
                     loading.style.display = 'none';
+                    downloadButton.style.display = 'block';
                 };
                 segmentedImg.src = 'data:image/png;base64,' + result.segmented_image;
+                segmentedImgUrl = segmentedImg.src;
             } else {
                 console.error('Error processing the frame');
                 loading.style.display = 'none';
@@ -287,8 +300,10 @@
                             segmentedImg.onload = function () {
                                 context.drawImage(segmentedImg, 0, 0, canvas.width, canvas.height);
                                 loading.style.display = 'none';
+                                downloadButton.style.display = 'block';
                             };
                             segmentedImg.src = 'data:image/png;base64,' + result.segmented_image;
+                            segmentedImgUrl = segmentedImg.src;
                         } else {
                             console.error('Error processing the frame');
                             loading.style.display = 'none';
@@ -299,11 +314,22 @@
                 reader.readAsDataURL(file);
             }
         });
+        // ######################################################
+        // ########################PHASE2########################
+        // ######################################################
 
         // ######################################################
         // ########################PHASE2########################
         // ######################################################
-        // Initial setup
+        downloadButton.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = segmentedImgUrl;
+            link.download = 'segmented_image.png';
+            link.click();
+        });
+        // ######################################################
+        // ########################PHASE2########################
+        // ######################################################
         updateUI();
     </script>
 </body>
