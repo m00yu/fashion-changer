@@ -1,0 +1,99 @@
+/* ######################################################
+########################PHASE2########################
+###################################################### */
+
+body {
+    font-family: Arial, sans-serif; /* Modern font */
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f4f4f4; /* Light grey background */
+}
+
+.main-container {
+    text-align: center;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+}
+
+.video-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+video, canvas {
+    width: 640px;
+    height: 480px;
+    border: 1px solid #ccc; /* Lighter border */
+}
+
+.controls {
+    margin-top: 20px;
+}
+
+.control-group {
+    margin-bottom: 20px; /* adds space between control groups */
+}
+
+label, select, .color-picker-info {
+    font-size: 16px;
+    color: #333; /* Darker text for better readability */
+}
+
+.color-picker-info {
+    display: inline-block; /* Align text and color picker on the same line */
+    margin-right: 10px; /* Space between the text and color picker */
+    line-height: 28px; /* Vertically align text with the color picker */
+}
+
+button {
+    display: block;
+    margin: 10px auto;
+    font-size: 14px;
+}
+
+select, input[type=color], button {
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background: white;
+    cursor: pointer; /* Cursor indicator for clickable items */
+}
+
+input[type="color"] {
+    vertical-align: middle; /* Align color picker with the text */
+}
+
+#loading {
+    display: none;
+    font-size: 16px;
+    color: red;
+    position: absolute;
+    top: 10px;  
+    left: 10px; 
+    background: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+}
+
+#uploadInput {
+    display: block;
+    margin: 10px auto;
+}
+
+#downloadButton {
+    display: none;
+    margin-top: 20px;
+}
+
+/* ######################################################
+########################PHASE2########################
+###################################################### */

@@ -14,6 +14,14 @@ cloth_net = load_seg_model(CLOTH_PATH, device=device)
 hair_net = build_model(HAIR_PATH, device)
 
 app = FastAPI()
+######################################################
+########################PHASE2########################
+######################################################
+app.mount("/static", StaticFiles(directory="static"), name="static")
+######################################################
+########################PHASE2########################
+######################################################
+
 templates = Jinja2Templates(directory="templates")
 palette = get_palette(4)
 
